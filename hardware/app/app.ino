@@ -5,11 +5,41 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 
-byte led = 33;
-byte led2 = 2;
-byte ldr = 35;
-byte temp = 34;
-byte cooler = 25;
+//Sensores de umidade solo
+
+byte solo1 = 32;
+byte solo2 = 33;
+byte solo3 = 34;
+byte solo4 = 35;
+
+//Motores de passo
+
+byte motor1 = 25;
+byte motor2 = 26;
+byte motor3 = 27;
+
+//Eletroimã
+
+byte ima1 = 12;
+byte ima2 = 13;
+byte ima3 = 14;
+byte ima4 = 23;
+
+//Bomba
+
+byte bomba = 22;
+
+//Micro switcher
+
+byte switcher = 21;
+
+//Temperatura
+
+byte temp = 19;
+
+//Umidade do ar
+
+byte ar = 18;
 
 // WiFi
 const char *ssid = "moto";           // Enter your WiFi name
@@ -17,11 +47,18 @@ const char *password = "123456789";  // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
-const char *topic2 = "/luminosidade";
-const char *topic3 = "/temperatura";
+
+const char *topic1 = "/umidade_ar";
+const char *topic2 = "/umidade_solo1";
+const char *topic3 = "/umidade_solo2";
+const char *topic4 = "/umidade_solo3";
+const char *topic5 = "/umidade_solo4";
+const char *topic6 = "/temperatura";
+
 const char *mqtt_username = "teste";
 const char *mqtt_password = "12345";
 const int mqtt_port = 1883;
+
 int ldrValue, tempValue, ldrPercentage;
 float temperature;
 
