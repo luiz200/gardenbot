@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 # Configurar o Flask para MQTT
 app.config['MQTT_BROKER_URL'] = os.environ.get('MQTT_BROKER_URL')
