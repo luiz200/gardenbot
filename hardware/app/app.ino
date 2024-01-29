@@ -42,8 +42,8 @@ byte temp = 19;
 byte ar = 18;
 
 // WiFi
-const char *ssid = "moto";           // Enter your WiFi name
-const char *password = "123456789";  // Enter WiFi password
+const char *ssid = "Simone";           // Enter your WiFi name
+const char *password = "simone234";  // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
@@ -59,10 +59,12 @@ const char *mqtt_username = "teste";
 const char *mqtt_password = "12345";
 const int mqtt_port = 1883;
 
-int ldrValue, tempValue, ldrPercentage;
+
 float temperature;
 
-String ldrPercentageStr, temperatureStr;
+int tempValue, solo1Value, solo2Value, solo3Value, solo4Value, solo1Porcentagem, solo2Porcentagem, solo3Porcentagem, solo4Porcentagem;
+
+String temperatureStr, solo1PorcentagemStr, solo2PorcentagemStr, solo3PorcentagemStr, solo4PorcentagemStr;
 
 const int termistorPin = temp;         // Pino analógico onde o termistor está conectado
 const float termistorNominal = 10000;  // Resistência nominal do termistor
@@ -90,21 +92,21 @@ float convertToTemperature(int termistorValue) {
 
 void ledTask(void *parameter){
   while (1) {
-    ldrValue = analogRead(ldr);
+    //ldrValue = analogRead(ldr);
     tempValue = analogRead(temp);
-    ldrPercentage = map(ldrValue, 0, 4095, 100, 0);
+    //ldrPercentage = map(ldrValue, 0, 4095, 100, 0);
     temperature = convertToTemperature(tempValue);
     // receber do broker do topico temperatura
-    if (ldrPercentage < 20) {
-      digitalWrite(led, 1);
-    } else {
-      digitalWrite(led, 0);
-    }
-    if (temperature > 27) {
-      dacWrite(cooler, 4095);
-    } else {
-      dacWrite(cooler, 0);
-    }
+    // if (ldrPercentage < 20) {
+    //   digitalWrite(led, 1);
+    // } else {
+    //   digitalWrite(led, 0);
+    // }
+    // if (temperature > 27) {
+    //   dacWrite(cooler, 4095);
+    // } else {
+    //   dacWrite(cooler, 0);
+    // }
   }
 }
 
@@ -136,27 +138,51 @@ void mqttTask(void *parameter) {
   while (1) {
     client.loop();
       // publish and subscribe
-      ldrValue = analogRead(ldr);
       tempValue = analogRead(temp);
-      ldrPercentage = map(ldrValue, 0, 4095, 100, 0);
+      solo1Value = analogRead(solo1);
+      solo2Value = analogRead(solo2);
+      solo3Value = analogRead(solo3);
+      solo4Value = analogRead(solo4);
+
+      solo1Porcentagem = map(solo1Value, 0, 4095, 100, 0);
+      solo2Porcentagem = map(solo2Value, 0, 4095, 100, 0);
+      solo3Porcentagem = map(solo3Value, 0, 4095, 100, 0);
+      solo4Porcentagem = map(solo4Value, 0, 4095, 100, 0);
+
       temperature = convertToTemperature(tempValue);
-      ldrPercentageStr = String(ldrPercentage);
+
       temperatureStr = String(temperature);
-      client.publish(topic2, ldrPercentageStr.c_str());
-      Serial.println(ldrPercentageStr.c_str());
-      client.publish(topic3, temperatureStr.c_str());
+      solo1PorcentagemStr = String(solo1Porcentagem);
+      solo2PorcentagemStr = String(solo2Porcentagem);
+      solo3PorcentagemStr = String(solo3Porcentagem);
+      solo4PorcentagemStr = String(solo4Porcentagem);
+      
+      client.publish(topic2, solo1PorcentagemStr.c_str());
+      Serial.println(solo1PorcentagemStr.c_str());
+      client.publish(topic3, solo2PorcentagemStr.c_str());
+      Serial.println(solo2PorcentagemStr.c_str());
+      client.publish(topic4, solo3PorcentagemStr.c_str());
+      Serial.println(solo3PorcentagemStr.c_str());
+      client.publish(topic5, solo4PorcentagemStr.c_str());
+      Serial.println(solo4PorcentagemStr.c_str());
+      client.publish(topic6, temperatureStr.c_str());
       Serial.println(temperatureStr.c_str());
+
       vTaskDelay(1000);
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(led, OUTPUT);
-  pinMode(led2, OUTPUT);
-  pinMode(ldr, INPUT);
+  //pinMode(led, OUTPUT);
+  //pinMode(led2, OUTPUT);
+  //pinMode(ldr, INPUT);
+  pinMode(solo1, INPUT);
+  pinMode(solo2, INPUT);
+  pinMode(solo3, INPUT);
+  pinMode(solo4, INPUT);
   pinMode(temp, INPUT);
-  pinMode(cooler, OUTPUT);
+  //pinMode(cooler, OUTPUT);
 
   xSemaphore = xSemaphoreCreateMutex();
 

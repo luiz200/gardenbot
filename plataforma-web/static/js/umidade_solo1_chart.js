@@ -39,5 +39,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    setInterval(updateChart, 1000);
+    setInterval(updateChart, 5000);
 });
