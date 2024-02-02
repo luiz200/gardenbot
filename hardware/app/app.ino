@@ -9,7 +9,7 @@
 
 byte solo1 = 32;
 byte solo2 = 33;
-byte solo3 = 34;
+byte solo3 = 19;
 byte solo4 = 35;
 
 //Motores de passo
@@ -35,7 +35,7 @@ byte switcher = 21;
 
 //Temperatura
 
-byte temp = 19;
+byte temp = 34;
 
 //Umidade do ar
 
@@ -55,7 +55,7 @@ const char *topic4 = "/umidade_solo3";
 const char *topic5 = "/umidade_solo4";
 const char *topic6 = "/temperatura";
 
-const char *mqtt_username = "teste";
+const char *mqtt_username = "bot";
 const char *mqtt_password = "12345";
 const int mqtt_port = 1883;
 
@@ -113,7 +113,7 @@ void ledTask(void *parameter){
 void connectWiFiTask(void *parameter) {
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-
+    delay(500);
     Serial.println("Connecting to WiFi..");
   }
   Serial.println("Connected to the WiFi network");
