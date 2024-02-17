@@ -28,7 +28,7 @@ byte ima4 = 23;
 
 //Bomba
 
-byte bomba = 22;
+byte bomba = 2;
 
 //Micro switcher
 
@@ -65,25 +65,69 @@ DHT dht(4, DHT22);
 
 SemaphoreHandle_t xSemaphore;
 
-//void ledTask(void *parameter){
-//  while (1) {
-//    //ldrValue = analogRead(ldr);
-//    tempValue = analogRead(temp);
-//    //ldrPercentage = map(ldrValue, 0, 4095, 100, 0);
-//    temperature = convertToTemperature(tempValue);
-//    // receber do broker do topico temperatura
-//    // if (ldrPercentage < 20) {
-//    //   digitalWrite(led, 1);
-//    // } else {
-//    //   digitalWrite(led, 0);
-//    // }
-//    // if (temperature > 27) {
-//    //   dacWrite(cooler, 4095);
-//    // } else {
-//    //   dacWrite(cooler, 0);
-//    // }
-//  }
-//}
+void vaso1Task(void *parameter){
+  while (1) {
+    solo1Value = analogRead(solo1);
+    solo1Porcentagem = map(solo1Value, 0, 4095, 100, 0);
+
+    if (solo1Porcentagem < 60){
+      digitalWrite(bomba, 1);
+      if(solo1Porcentagem == 80){
+        digitalWrite(bomba, 0);
+      }
+    }else{
+      digitalWrite(bomba, 0);
+    }
+  }
+}
+
+void vaso2Task(void *parameter){
+  while (1){
+    solo2Value = analogRead(solo2);
+    solo2Porcentagem = map(solo2Value, 0, 4095, 100, 0);
+
+    if (solo2Porcentagem < 60){
+      digitalWrite(bomba, 1);
+      if(solo2Porcentagem == 80){
+        digitalWrite(bomba, 0);
+      }
+    }else{
+      digitalWrite(bomba, 0);
+    }
+  }
+}
+
+void vaso3Task(void *parameter){
+  while(1){
+    solo3Value = analogRead(solo3);
+    solo3Porcentagem = map(solo3Value, 0, 4095, 100, 0);
+
+    if (solo3Porcentagem < 60){
+      digitalWrite(bomba, 1);
+      if(solo3Porcentagem == 80){
+        digitalWrite(bomba, 0);
+      }
+    }else{
+      digitalWrite(bomba, 0)
+    }
+  }
+}
+
+void vaso4Task(void *parameter){
+  while(1){
+    solo4Value = analogRead(solo4);
+    solo4Porcentagem = map(solo4Value, 0, 4095, 100, 0);
+
+    if (solo4Porcentagem < 60){
+      digitalWrite(bomba, 1);
+      if(solo4Porcentagem == 80){
+        digitalWrite(bomba, 0);
+      }
+    }else{
+      digitalWrite(bomba, 0)
+    }
+  }
+}
 
 void connectWiFiTask(void *parameter) {
   WiFi.begin(ssid, password);
@@ -168,6 +212,42 @@ void setup() {
     1,
     NULL,
     0);
+    
+  xTaskCreatePinnedToCore(
+    vaso1Task,
+    "Vaso1Task",
+    10000,
+    NULL,
+    2,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso2Task,
+    "Vaso2Task",
+    10000,
+    NULL,
+    2,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso3Task,
+    "Vaso2Task",
+    10000,
+    NULL,
+    2,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso4Task,
+    "Vaso4Task",
+    10000,
+    NULL,
+    2,
+    NULL,
+    1);
 }
 
 void loop() {
