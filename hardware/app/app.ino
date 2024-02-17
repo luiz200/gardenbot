@@ -10,29 +10,29 @@
 
 byte solo1 = 32;
 byte solo2 = 33;
-byte solo3 = 19;
+byte solo3 = 34;
 byte solo4 = 35;
 
 //Motores de passo
 
-//byte motor1 = 25;
-//byte motor2 = 26;
-//byte motor3 = 27;
-//
-////Eletroimã
-//
-//byte ima1 = 12;
-//byte ima2 = 13;
-//byte ima3 = 14;
-//byte ima4 = 23;
-//
-////Bomba
-//
-//byte bomba = 22;
-//
-////Micro switcher
-//
-//byte switcher = 21;
+byte motor1 = 25;
+byte motor2 = 26;
+byte motor3 = 27;
+
+//Eletroimã
+
+byte ima1 = 12;
+byte ima2 = 13;
+byte ima3 = 14;
+byte ima4 = 23;
+
+//Bomba
+
+byte bomba = 22;
+
+//Micro switcher
+
+byte switcher = 21;
 
 // WiFi
 const char *ssid = "Simone";           // Enter your WiFi name
