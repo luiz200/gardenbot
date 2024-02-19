@@ -64,18 +64,21 @@ PubSubClient client(espClient);
 DHT dht(4, DHT22);
 
 SemaphoreHandle_t xSemaphore;
+SemaphoreHandle_t semaforoBomba;
 
 void vaso1Task(void *parameter){
   while (1) {
     solo1Value = analogRead(solo1);
     solo1Porcentagem = map(solo1Value, 0, 4095, 100, 0);
-
-    if (solo1Porcentagem < 60){
-      digitalWrite(bomba, 1);
-      if(solo1Porcentagem == 80){
-        digitalWrite(bomba, 0);
+  
+    if (solo1Porcentagem <= 60){
+      if(xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
+        delay(5000);
+        digitalWrite(bomba, 1);
+        xSemaphoreGive(semaforoBomba); 
       }
-    }else{
+    }
+    else{
       digitalWrite(bomba, 0);
     }
   }
@@ -85,13 +88,15 @@ void vaso2Task(void *parameter){
   while (1){
     solo2Value = analogRead(solo2);
     solo2Porcentagem = map(solo2Value, 0, 4095, 100, 0);
-
-    if (solo2Porcentagem < 60){
-      digitalWrite(bomba, 1);
-      if(solo2Porcentagem == 80){
-        digitalWrite(bomba, 0);
+  
+    if (solo2Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
+        delay(5000);
+        digitalWrite(bomba, 1);
+        xSemaphoreGive(semaforoBomba); 
       }
-    }else{
+    }
+    else{
       digitalWrite(bomba, 0);
     }
   }
@@ -101,14 +106,16 @@ void vaso3Task(void *parameter){
   while(1){
     solo3Value = analogRead(solo3);
     solo3Porcentagem = map(solo3Value, 0, 4095, 100, 0);
-
-    if (solo3Porcentagem < 60){
-      digitalWrite(bomba, 1);
-      if(solo3Porcentagem == 80){
-        digitalWrite(bomba, 0);
+  
+    if (solo3Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
+        delay(5000);
+        digitalWrite(bomba, 1);
+        xSemaphoreGive(semaforoBomba); 
       }
-    }else{
-      digitalWrite(bomba, 0)
+    }
+    else{
+      digitalWrite(bomba, 0);
     }
   }
 }
@@ -117,14 +124,16 @@ void vaso4Task(void *parameter){
   while(1){
     solo4Value = analogRead(solo4);
     solo4Porcentagem = map(solo4Value, 0, 4095, 100, 0);
-
-    if (solo4Porcentagem < 60){
-      digitalWrite(bomba, 1);
-      if(solo4Porcentagem == 80){
-        digitalWrite(bomba, 0);
+  
+    if (solo4Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
+        delay(5000);
+        digitalWrite(bomba, 1);
+        xSemaphoreGive(semaforoBomba); 
       }
-    }else{
-      digitalWrite(bomba, 0)
+    }
+    else{
+      digitalWrite(bomba, 0);
     }
   }
 }
@@ -194,6 +203,7 @@ void setup() {
   dht.begin();
 
   xSemaphore = xSemaphoreCreateMutex();
+  semaforoBomba = xSemaphoreCreateMutex();
 
   xTaskCreatePinnedToCore(
     connectWiFiTask,
