@@ -146,7 +146,7 @@ def get_latest_message():
 #     return jsonify({
 #         'message': {
 #             'temperatura_p': previous_messages[topic_temperature],
-#             'umidade_ar_p': previous_messages[topic_umidade_ar],
+#             'umidade_ar _p': previous_messages[topic_umidade_ar],
 #             'umidade_solo1_p': previous_messages[topic_umidade_solo1],
 #             'umidade_solo2_p': previous_messages[topic_umidade_solo2],
 #             'umidade_solo3_p': previous_messages[topic_umidade_solo3],
