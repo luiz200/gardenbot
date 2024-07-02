@@ -35,14 +35,14 @@ latest_messages = {
     topic_umidade_solo4: None
 }
 
-# previous_messages = {
-#     topic_temperature: None,
-#     topic_umidade_ar: None,
-#     topic_umidade_solo1: None,
-#     topic_umidade_solo2: None,
-#     topic_umidade_solo3: None,
-#     topic_umidade_solo4: None
-# }
+previous_messages = {
+    topic_temperature: None,
+    topic_umidade_ar: None,
+    topic_umidade_solo1: None,
+    topic_umidade_solo2: None,
+    topic_umidade_solo3: None,
+    topic_umidade_solo4: None
+}
 
 @mqtt_client.on_connect()
 def handle_connect(client, userdata, flags, rc):
@@ -68,30 +68,6 @@ def handle_mqtt_message(client, userdata, message):
         topic=message.topic,
         payload=message.payload.decode()
     )
-    if message.topic == topic_umidade_ar:
-        data['topic_umidade_ar'] = message.payload.decode()
-        latest_messages[topic_umidade_ar] = data['topic_umidade_ar']
-        # previous_messages[topic_umidade_ar] = data['topic_umidade_ar']
-    elif message.topic == topic_umidade_solo1:
-        data['topic_umidade_solo1'] = message.payload.decode()
-        latest_messages[topic_umidade_solo1] = data['topic_umidade_solo1']
-        # previous_messages[topic_umidade_solo1] = data['topic_umidade_solo1']
-    elif message.topic == topic_umidade_solo2:
-        data['topic_umidade_solo2'] = message.payload.decode()
-        latest_messages[topic_umidade_solo2] = data['topic_umidade_solo2']
-        # previous_messages[topic_umidade_solo2] = data['topic_umidade_solo2']
-    elif message.topic == topic_umidade_solo3:
-        data['topic_umidade_solo3'] = message.payload.decode()
-        latest_messages[topic_umidade_solo3] = data['topic_umidade_solo3']
-        # previous_messages[topic_umidade_solo3] = data['topic_umidade_solo3']
-    elif message.topic == topic_umidade_solo4:
-        data['topic_umidade_solo4'] = message.payload.decode()
-        latest_messages[topic_umidade_solo4] = data['topic_umidade_solo4']
-        # previous_messages[topic_umidade_solo4] = data['topic_umidade_solo4']
-    elif message.topic == topic_temperature:
-        data['topic_temperature'] = message.payload.decode()
-        latest_messages[topic_temperature] = data['topic_temperature']
-        # previous_messages[topic_temperature] = data['topic_temperature']
 
     output = 'Received message on topic: {topic}'.format(**data)
     if 'topic_umidade_ar' in data:
@@ -111,18 +87,32 @@ def handle_mqtt_message(client, userdata, message):
 
     print(output)
 
+def compare_values(current, previous):
+    if previous is None:
+        return "No data"
+    
+    if current > previous:
+        return "subiu"
+    elif current < previous:
+        return "desceu"
+    else:
+        return "permaneceu o mesmo"
 
 
 @app.route('/')
 def index():
 
     return render_template('index.html', 
-                           latest_temperature=latest_messages[topic_temperature], latest_umidade_ar=latest_messages[topic_umidade_ar],
-                           latest_umidade_solo1=latest_messages[topic_umidade_solo1], latest_umidade_solo2=latest_messages[topic_umidade_solo2], 
-                           latest_umidade_solo3=latest_messages[topic_umidade_solo3], latest_umidade_solo4=latest_messages[topic_umidade_solo4]
-                        #    previous_temperature=previous_messages[topic_temperature], previous_umidade_ar=previous_messages[topic_umidade_ar],
-                        #    previous_umidade_solo1=previous_messages[topic_umidade_solo1], previous_umidade_solo2=previous_messages[topic_umidade_solo2],
-                        #    previous_umidade_solo3=previous_messages[topic_umidade_solo3], previous_umidade_solo4=previous_messages[topic_umidade_solo4]
+                        latest_temperature=latest_messages[topic_temperature], latest_umidade_ar=latest_messages[topic_umidade_ar],
+                        latest_umidade_solo1=latest_messages[topic_umidade_solo1], latest_umidade_solo2=latest_messages[topic_umidade_solo2], 
+                        latest_umidade_solo3=latest_messages[topic_umidade_solo3], latest_umidade_solo4=latest_messages[topic_umidade_solo4],
+                        previous_temperature=previous_messages[topic_temperature],
+                        temperature_comparison=compare_values(latest_messages[topic_temperature], previous_messages[topic_temperature]),
+                        umidade_ar_comparison=compare_values(latest_messages[topic_umidade_ar], previous_messages[topic_umidade_ar]),
+                        umidade_solo1_comparison=compare_values(latest_messages[topic_umidade_solo1], previous_messages[topic_umidade_solo1]),
+                        umidade_solo2_comparison=compare_values(latest_messages[topic_umidade_solo2], previous_messages[topic_umidade_solo2]),
+                        umidade_solo3_comparison=compare_values(latest_messages[topic_umidade_solo3], previous_messages[topic_umidade_solo3]),
+                        umidade_solo4_comparison=compare_values(latest_messages[topic_umidade_solo4], previous_messages[topic_umidade_solo4])
                         )
 
 
@@ -132,27 +122,20 @@ def get_latest_message():
     return jsonify({
         'message': {
             'temperature': latest_messages[topic_temperature],
+            'temperature_comparison': compare_values(latest_messages[topic_temperature], previous_messages[topic_temperature]),
+            'previous_temperature': previous_messages[topic_temperature],
             'umidade_ar': latest_messages[topic_umidade_ar],
+            'umidade_ar_comparison': compare_values(latest_messages[topic_umidade_ar], previous_messages[topic_umidade_ar]),
             'umidade_solo1': latest_messages[topic_umidade_solo1],
+            'umidade_solo1_comparison': compare_values(latest_messages[topic_umidade_solo1], previous_messages[topic_umidade_solo1]),
             'umidade_solo2': latest_messages[topic_umidade_solo2],
+            'umidade_solo2_comparison': compare_values(latest_messages[topic_umidade_solo2], previous_messages[topic_umidade_solo2]),
             'umidade_solo3': latest_messages[topic_umidade_solo3],
+            'umidade_solo3_comparison': compare_values(latest_messages[topic_umidade_solo3], previous_messages[topic_umidade_solo3]),
             'umidade_solo4': latest_messages[topic_umidade_solo4],
+            'umidade_solo4_comparison': compare_values(latest_messages[topic_umidade_solo4], previous_messages[topic_umidade_solo4])
         }
     })
-
-# @app.route('/get_previous_message', methods=['GET'])
-# def get_previous_message():
-
-#     return jsonify({
-#         'message': {
-#             'temperatura_p': previous_messages[topic_temperature],
-#             'umidade_ar _p': previous_messages[topic_umidade_ar],
-#             'umidade_solo1_p': previous_messages[topic_umidade_solo1],
-#             'umidade_solo2_p': previous_messages[topic_umidade_solo2],
-#             'umidade_solo3_p': previous_messages[topic_umidade_solo3],
-#             'umidade_solo4_p': previous_messages[topic_umidade_solo4],
-#         }
-#     })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
