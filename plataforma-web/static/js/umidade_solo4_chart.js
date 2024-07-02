@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 umidadeSolo4Chart.data.labels.push(new Date().toLocaleTimeString());
                 umidadeSolo4Chart.data.datasets[0].data.push(parseFloat(data.message.umidade_solo4));
 
+                if(umidadeSolo4Chart.data.labels.length > 10) {
+                    umidadeSolo4Chart.data.labels.shift();
+                    umidadeSolo4Chart.data.datasets[0].data.shift();
+                }
+                            
                 umidadeSolo4Chart.update();
             });
     }

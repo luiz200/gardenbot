@@ -10,7 +10,7 @@
 
 byte solo1 = 32;
 byte solo2 = 33;
-byte solo3 = 19;
+byte solo3 = 34;
 byte solo4 = 35;
 
 //Motores de passo
@@ -18,25 +18,25 @@ byte solo4 = 35;
 //byte motor1 = 25;
 //byte motor2 = 26;
 //byte motor3 = 27;
-//
-////Eletroimã
-//
-//byte ima1 = 12;
-//byte ima2 = 13;
-//byte ima3 = 14;
-//byte ima4 = 23;
-//
-////Bomba
-//
-//byte bomba = 22;
-//
-////Micro switcher
-//
+
+//Eletroimã
+
+byte ima1 = 14;
+byte ima2 = 27;
+byte ima3 = 26;
+byte ima4 = 25;
+
+//Bomba
+
+byte bomba = 15;
+
+//Micro switcher
+
 //byte switcher = 21;
 
 // WiFi
-const char *ssid = "Simone";           // Enter your WiFi name
-const char *password = "simone234";  // Enter WiFi password
+const char *ssid = "UFRN - EAJ";           // Enter your WiFi name
+const char *password = "";  // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
@@ -64,26 +64,115 @@ PubSubClient client(espClient);
 DHT dht(4, DHT22);
 
 SemaphoreHandle_t xSemaphore;
+SemaphoreHandle_t semaforoBomba;
 
-//void ledTask(void *parameter){
-//  while (1) {
-//    //ldrValue = analogRead(ldr);
-//    tempValue = analogRead(temp);
-//    //ldrPercentage = map(ldrValue, 0, 4095, 100, 0);
-//    temperature = convertToTemperature(tempValue);
-//    // receber do broker do topico temperatura
-//    // if (ldrPercentage < 20) {
-//    //   digitalWrite(led, 1);
-//    // } else {
-//    //   digitalWrite(led, 0);
-//    // }
-//    // if (temperature > 27) {
-//    //   dacWrite(cooler, 4095);
-//    // } else {
-//    //   dacWrite(cooler, 0);
-//    // }
-//  }
-//}
+void vaso1Task(void *parameter){
+  
+  bool bomba_ativada = false;
+  
+  while (1) {
+    solo1Value = analogRead(solo1);
+    solo1Porcentagem = map(solo1Value, 0, 4095, 100, 0);
+  
+    if (solo1Porcentagem <= 60){
+      if(xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
+        vTaskDelay(5000);
+        Serial.println("Vaso 1");
+        digitalWrite(bomba, HIGH);
+        xSemaphoreGive(semaforoBomba); 
+      }
+    }
+    else{
+      digitalWrite(bomba, LOW);
+      bomba_ativada = false;
+    }
+    if (bomba_ativada && solo1Porcentagem == 80) {
+      break;
+    }
+    vTaskDelay(100000);
+  }
+}
+
+void vaso2Task(void *parameter){
+
+  bool bomba_ativada = false;
+  
+  while (1){
+    solo2Value = analogRead(solo2);
+    solo2Porcentagem = map(solo2Value, 0, 4095, 100, 0);
+  
+    if (solo2Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
+        vTaskDelay(5000);
+        Serial.println("Vaso 2");
+        digitalWrite(bomba, HIGH);
+        xSemaphoreGive(semaforoBomba); 
+      }
+    }
+    else{
+      digitalWrite(bomba, LOW);
+      bomba_ativada = false;
+    }
+    if (bomba_ativada && solo1Porcentagem == 80) {
+      break;
+    }
+    vTaskDelay(100000);
+  }
+}
+
+void vaso3Task(void *parameter){
+
+  bool bomba_ativada = false;
+  
+  while(1){
+    solo3Value = analogRead(solo3);
+    solo3Porcentagem = map(solo3Value, 0, 4095, 100, 0);
+  
+    if (solo3Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
+        vTaskDelay(5000);
+        Serial.println("Vaso 3");
+        digitalWrite(bomba, HIGH);
+        xSemaphoreGive(semaforoBomba); 
+      }
+    }
+    else{
+      digitalWrite(bomba, LOW);
+      bomba_ativada = false;
+    }
+    if (bomba_ativada && solo1Porcentagem == 80) {
+      break;
+    }
+    vTaskDelay(100000);
+  }
+}
+
+void vaso4Task(void *parameter){
+
+  bool bomba_ativada = false;
+  
+  while(1){
+    solo4Value = analogRead(solo4);
+    solo4Porcentagem = map(solo4Value, 0, 4095, 100, 0);
+  
+    if (solo4Porcentagem <= 60){
+      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
+        vTaskDelay(5000);
+        Serial.println("Vaso 4");
+        digitalWrite(bomba, HIGH);
+        xSemaphoreGive(semaforoBomba); 
+      }
+    }
+    else{
+      digitalWrite(bomba, LOW);
+      bomba_ativada = false;
+    }
+    if (bomba_ativada && solo1Porcentagem == 80) {
+      break;
+    }
+    vTaskDelay(100000);
+  }
+}
 
 void connectWiFiTask(void *parameter) {
   WiFi.begin(ssid, password);
@@ -146,10 +235,12 @@ void setup() {
   pinMode(solo2, INPUT);
   pinMode(solo3, INPUT);
   pinMode(solo4, INPUT);
+  pinMode(bomba, OUTPUT);
 
   dht.begin();
 
   xSemaphore = xSemaphoreCreateMutex();
+  semaforoBomba = xSemaphoreCreateMutex();
 
   xTaskCreatePinnedToCore(
     connectWiFiTask,
@@ -168,6 +259,42 @@ void setup() {
     1,
     NULL,
     0);
+    
+  xTaskCreatePinnedToCore(
+    vaso1Task,
+    "Vaso1Task",
+    10000,
+    NULL,
+    1,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso2Task,
+    "Vaso2Task",
+    10000,
+    NULL,
+    1,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso3Task,
+    "Vaso3Task",
+    10000,
+    NULL,
+    1,
+    NULL,
+    1);
+
+  xTaskCreatePinnedToCore(
+    vaso4Task,
+    "Vaso4Task",
+    10000,
+    NULL,
+    1,
+    NULL,
+    1);
 }
 
 void loop() {
