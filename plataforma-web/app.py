@@ -106,7 +106,6 @@ def index():
                         latest_temperature=latest_messages[topic_temperature], latest_umidade_ar=latest_messages[topic_umidade_ar],
                         latest_umidade_solo1=latest_messages[topic_umidade_solo1], latest_umidade_solo2=latest_messages[topic_umidade_solo2], 
                         latest_umidade_solo3=latest_messages[topic_umidade_solo3], latest_umidade_solo4=latest_messages[topic_umidade_solo4],
-                        previous_temperature=previous_messages[topic_temperature],
                         temperature_comparison=compare_values(latest_messages[topic_temperature], previous_messages[topic_temperature]),
                         umidade_ar_comparison=compare_values(latest_messages[topic_umidade_ar], previous_messages[topic_umidade_ar]),
                         umidade_solo1_comparison=compare_values(latest_messages[topic_umidade_solo1], previous_messages[topic_umidade_solo1]),
@@ -123,7 +122,6 @@ def get_latest_message():
         'message': {
             'temperature': latest_messages[topic_temperature],
             'temperature_comparison': compare_values(latest_messages[topic_temperature], previous_messages[topic_temperature]),
-            'previous_temperature': previous_messages[topic_temperature],
             'umidade_ar': latest_messages[topic_umidade_ar],
             'umidade_ar_comparison': compare_values(latest_messages[topic_umidade_ar], previous_messages[topic_umidade_ar]),
             'umidade_solo1': latest_messages[topic_umidade_solo1],
