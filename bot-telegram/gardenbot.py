@@ -3,7 +3,7 @@ import asyncio
 import nest_asyncio
 import logging
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 
@@ -15,6 +15,8 @@ TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 
 last_temperatura = None
 last_umidade = None
+
+USERNAME, PASSWORD = range(2)
 
 async def send_telegram_message(context, chat_id, text):
     await context.bot.send_message(chat_id=chat_id, text=text)
@@ -28,17 +30,72 @@ def on_message(client, userdata, msg):
     elif msg.topic == '/umidade':
         last_umidade == message
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Olá! Estou pronto para fornecer dados de temperatura e umidade.')
+def connect_mqtt(username, password):
+    client = mqtt.Client()
+    client.on_message = on_message
+    client.username_pw_set(username, password)
 
-    # Configuração do MQTT
-    mqtt_client = mqtt.Client()
-    mqtt_client.user_data_set({'context': context, 'chat_id': update.message.chat_id})
-    mqtt_client.on_message = on_message
+    try:
+        client.connect('broker.emqx.io', 1883, 60)
+        client.subscribe('/temperatura')
+        client.subscribe('/umidade')
+        client.loop_start()
+        return client
+    except Exception as e:
+        logging.error(f"Erro ao conectar ao MQTT: {e}")
+        return None
+    
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text('Olá! Por favor, forneça seu nome de usuário MQTT:')
+    return USERNAME
 
-    # Conectar ao broker MQTT
-    mqtt_client.connect('broker.emqx.io', 1883, 60)
-    mqtt_client.subscribe('/temperatura')
-    mqtt_client.subscribe('/umidade')
+async def get_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data['MQTT_USERNAME'] = update.message.text
+    await update.message.reply_text('Nome de usuário MQTT recebido. Agora, forneça sua senha MQTT:')
+    return PASSWORD
 
-    mqtt_client.loop_start()
+async def get_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data['MQTT_PASSWORD'] = update.message.text
+    await update.message.reply_text('Senha MQTT recebida. Tentando conectar...')
+
+    mqtt_client = connect_mqtt(context.user_data['MQTT_USERNAME'], context.user_data['MQTT_PASSWORD'])
+    if mqtt_client:
+        context.user_data['mqtt_client'] = mqtt_client
+        await update.message.reply_text('Conectado ao MQTT com sucesso. Você pode começar a usar os comandos /temperature e /humidity.')
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text('Falha ao conectar ao MQTT. Verifique suas credenciais e tente novamente.')
+        return ConversationHandler.END
+
+async def get_temperatura(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if last_temperatura is not None:
+        await update.message.reply_text(f'A temperatura atual é {last_temperatura}°C')
+    else:
+        await update.message.reply_text('Os dados de temperatura ainda não foram recebidos.')
+
+async def get_umidade(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if last_umidade is not None:
+        await update.message.reply_text(f'A umidade atual é {last_umidade}%')
+    else:
+        await update.message.reply_text('Os dados de umidade não foram recebidos.')
+
+async def main():
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            USERNAME: [MessageHandler(filter.TEXT & ~filters.COMMAND, get_username)],
+            PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_password)],
+        },
+        fallbacks=[],
+    )
+
+    application.add_handler(conv_handler)
+    application.add_handler(CommandHandler("temperatura", get_temperatura))
+    application.add_handler(CommandHandler("umidade", get_umidade))
+
+    await application.run_polling()
+
+if __name__ == '__main__':
+    asyncio.run(main())
