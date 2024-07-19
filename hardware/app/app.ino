@@ -13,26 +13,9 @@ byte solo2 = 33;
 byte solo3 = 34;
 byte solo4 = 35;
 
-//Motores de passo
-
-//byte motor1 = 25;
-//byte motor2 = 26;
-//byte motor3 = 27;
-
-//Eletroimã
-
-byte ima1 = 14;
-byte ima2 = 27;
-byte ima3 = 26;
-byte ima4 = 25;
-
 //Bomba
 
-byte bomba = 15;
-
-//Micro switcher
-
-//byte switcher = 21;
+byte bomba = 4;
 
 // WiFi
 const char *ssid = "UFRN - EAJ";           // Enter your WiFi name
@@ -48,8 +31,8 @@ const char *topic4 = "/umidade_solo3";
 const char *topic5 = "/umidade_solo4";
 const char *topic6 = "/temperatura";
 
-const char *mqtt_username = "bot";
-const char *mqtt_password = "12345";
+const char *mqtt_username = "gardenbot";
+const char *mqtt_password = "Carro.2005";
 const int mqtt_port = 1883;
 
 
@@ -61,7 +44,7 @@ int solo1Value, solo2Value, solo3Value, solo4Value, solo1Porcentagem, solo2Porce
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-DHT dht(4, DHT22);
+DHT dht(15, DHT22);
 
 SemaphoreHandle_t xSemaphore;
 SemaphoreHandle_t semaforoBomba;
