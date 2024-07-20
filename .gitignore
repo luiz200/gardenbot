@@ -1,4 +1,4 @@
-# Ignorar diretórios e arquivos específicos
+# Ignorar diretórios e arquivos específicos.
 env/
 plataforma-web/.env
 bot-telgram/.env
