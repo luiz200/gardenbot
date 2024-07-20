@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+nest_asyncio.apply()
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
@@ -18,17 +20,16 @@ last_umidade = None
 
 USERNAME, PASSWORD = range(2)
 
-async def send_telegram_message(context, chat_id, text):
-    await context.bot.send_message(chat_id=chat_id, text=text)
-
 def on_message(client, userdata, msg):
     global last_temperatura, last_umidade
     message = msg.payload.decode()
 
+    #logging.info(f"Mensagem recebida no tópico {msg.topic}: {message}")
+
     if msg.topic == '/temperatura':
         last_temperatura = message
-    elif msg.topic == '/umidade':
-        last_umidade == message
+    elif msg.topic == '/umidade_ar':
+        last_umidade = message
 
 def connect_mqtt(username, password):
     client = mqtt.Client()
@@ -38,7 +39,7 @@ def connect_mqtt(username, password):
     try:
         client.connect('broker.emqx.io', 1883, 60)
         client.subscribe('/temperatura')
-        client.subscribe('/umidade')
+        client.subscribe('/umidade_ar')
         client.loop_start()
         return client
     except Exception as e:
@@ -61,7 +62,7 @@ async def get_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     mqtt_client = connect_mqtt(context.user_data['MQTT_USERNAME'], context.user_data['MQTT_PASSWORD'])
     if mqtt_client:
         context.user_data['mqtt_client'] = mqtt_client
-        await update.message.reply_text('Conectado ao MQTT com sucesso. Você pode começar a usar os comandos /temperature e /humidity.')
+        await update.message.reply_text('Conectado ao MQTT com sucesso. Você pode começar a usar os comandos /temperatura e /umidade.')
         return ConversationHandler.END
     else:
         await update.message.reply_text('Falha ao conectar ao MQTT. Verifique suas credenciais e tente novamente.')
@@ -85,7 +86,7 @@ async def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            USERNAME: [MessageHandler(filter.TEXT & ~filters.COMMAND, get_username)],
+            USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_username)],
             PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_password)],
         },
         fallbacks=[],
@@ -98,4 +99,5 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
