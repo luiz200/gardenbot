@@ -1,7 +1,5 @@
+# Ignorar diretórios e arquivos específicos
 env/
-
 plataforma-web/.env
-
 bot-telgram/.env
-
-plataforma-web/__pycache__/app.cpython-38.pyc
+plataforma-web/__pycache__/
