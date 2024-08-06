@@ -5,25 +5,28 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <DHT.h>
+#include <Fuzzy.h>
 
 //Sensores de umidade solo
-
 byte solo1 = 32;
 byte solo2 = 33;
 byte solo3 = 34;
 byte solo4 = 35;
 
 //Bomba
-
 byte bomba = 4;
 
 // WiFi
-const char *ssid = "UFRN - EAJ";           // Enter your WiFi name
-const char *password = "";  // Enter WiFi password
+const char *ssid = "...";           // Enter your WiFi name
+const char *password = "...";  // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
+const char *mqtt_username = "";
+const char *mqtt_password = "";
+const int mqtt_port = 1883;
 
+//Tópicos
 const char *topic1 = "/umidade_ar";
 const char *topic2 = "/umidade_solo1";
 const char *topic3 = "/umidade_solo2";
@@ -31,131 +34,28 @@ const char *topic4 = "/umidade_solo3";
 const char *topic5 = "/umidade_solo4";
 const char *topic6 = "/temperatura";
 
-const char *mqtt_username = "gardenbot";
-const char *mqtt_password = "Carro.2005";
-const int mqtt_port = 1883;
-
-
 float temp, humi;
 
 int solo1Value, solo2Value, solo3Value, solo4Value, solo1Porcentagem, solo2Porcentagem, solo3Porcentagem, solo4Porcentagem;
 
+DHT dht(15, DHT22);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-DHT dht(15, DHT22);
 
 SemaphoreHandle_t xSemaphore;
 SemaphoreHandle_t semaforoBomba;
 
-void vaso1Task(void *parameter){
-  
-  bool bomba_ativada = false;
-  
-  while (1) {
-    solo1Value = analogRead(solo1);
-    solo1Porcentagem = map(solo1Value, 0, 4095, 100, 0);
-  
-    if (solo1Porcentagem <= 60){
-      if(xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE){
-        vTaskDelay(5000);
-        Serial.println("Vaso 1");
-        digitalWrite(bomba, HIGH);
-        xSemaphoreGive(semaforoBomba); 
-      }
-    }
-    else{
-      digitalWrite(bomba, LOW);
-      bomba_ativada = false;
-    }
-    if (bomba_ativada && solo1Porcentagem == 80) {
-      break;
-    }
-    vTaskDelay(100000);
-  }
-}
+// Variáveis Fuzzy
+Fuzzy *fuzzy = new Fuzzy();
+FuzzySet *umidadeSeca = new FuzzySet(0, 0, 20, 40);
+FuzzySet *umidadeModerada = new FuzzySet(30, 50, 70);
+FuzzySet *umidadeUmida = new FuzzySet(60, 80, 100);
 
-void vaso2Task(void *parameter){
-
-  bool bomba_ativada = false;
-  
-  while (1){
-    solo2Value = analogRead(solo2);
-    solo2Porcentagem = map(solo2Value, 0, 4095, 100, 0);
-  
-    if (solo2Porcentagem <= 60){
-      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
-        vTaskDelay(5000);
-        Serial.println("Vaso 2");
-        digitalWrite(bomba, HIGH);
-        xSemaphoreGive(semaforoBomba); 
-      }
-    }
-    else{
-      digitalWrite(bomba, LOW);
-      bomba_ativada = false;
-    }
-    if (bomba_ativada && solo1Porcentagem == 80) {
-      break;
-    }
-    vTaskDelay(100000);
-  }
-}
-
-void vaso3Task(void *parameter){
-
-  bool bomba_ativada = false;
-  
-  while(1){
-    solo3Value = analogRead(solo3);
-    solo3Porcentagem = map(solo3Value, 0, 4095, 100, 0);
-  
-    if (solo3Porcentagem <= 60){
-      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
-        vTaskDelay(5000);
-        Serial.println("Vaso 3");
-        digitalWrite(bomba, HIGH);
-        xSemaphoreGive(semaforoBomba); 
-      }
-    }
-    else{
-      digitalWrite(bomba, LOW);
-      bomba_ativada = false;
-    }
-    if (bomba_ativada && solo1Porcentagem == 80) {
-      break;
-    }
-    vTaskDelay(100000);
-  }
-}
-
-void vaso4Task(void *parameter){
-
-  bool bomba_ativada = false;
-  
-  while(1){
-    solo4Value = analogRead(solo4);
-    solo4Porcentagem = map(solo4Value, 0, 4095, 100, 0);
-  
-    if (solo4Porcentagem <= 60){
-      if (xSemaphoreTake(semaforoBomba, (TickType_t)1) == pdTRUE){
-        vTaskDelay(5000);
-        Serial.println("Vaso 4");
-        digitalWrite(bomba, HIGH);
-        xSemaphoreGive(semaforoBomba); 
-      }
-    }
-    else{
-      digitalWrite(bomba, LOW);
-      bomba_ativada = false;
-    }
-    if (bomba_ativada && solo1Porcentagem == 80) {
-      break;
-    }
-    vTaskDelay(100000);
-  }
-}
+FuzzySet *irrigarNenhuma = new FuzzySet(0, 0, 10, 20);
+FuzzySet *irrigarPouca = new FuzzySet(10, 30, 50);
+FuzzySet *irrigarMuita = new FuzzySet(40, 60, 100);
 
 void connectWiFiTask(void *parameter) {
   WiFi.begin(ssid, password);
@@ -207,7 +107,32 @@ void mqttTask(void *parameter) {
       client.publish(topic6, String(temp).c_str());
       
 
-      vTaskDelay(1000);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
+void vasoTask(void *parameter) {
+  byte sensorPin = *((byte *)parameter);
+
+  while (1) {
+    int umidadeSolo = analogRead(sensorPin);
+    int umidadePercentual = map(umidadeSolo, 0, 4095, 100, 0);
+
+    fuzzy->setInput(1, umidadePercentual);
+    fuzzy->fuzzify();
+
+    float intensidadeIrrigacao = fuzzy->defuzzify(1);
+
+    if (xSemaphoreTake(semaforoBomba, (TickType_t)10) == pdTRUE) {
+      if (intensidadeIrrigacao > 10) {  // Ajuste o limiar conforme necessário
+        digitalWrite(bomba, HIGH);
+        delay(intensidadeIrrigacao * 10);  // Ajuste a duração conforme necessário
+        digitalWrite(bomba, LOW);
+      }
+      xSemaphoreGive(semaforoBomba);
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
@@ -222,62 +147,30 @@ void setup() {
 
   dht.begin();
 
-  xSemaphore = xSemaphoreCreateMutex();
+  // Configuração Fuzzy
+  fuzzy->addFuzzyInput(new FuzzyInput(1));
+  fuzzy->addFuzzyOutput(new FuzzyOutput(1));
+
+  fuzzy->getFuzzyInput(1)->addFuzzySet(umidadeSeca);
+  fuzzy->getFuzzyInput(1)->addFuzzySet(umidadeModerada);
+  fuzzy->getFuzzyInput(1)->addFuzzySet(umidadeUmida);
+
+  fuzzy->getFuzzyOutput(1)->addFuzzySet(irrigarNenhuma);
+  fuzzy->getFuzzyOutput(1)->addFuzzySet(irrigarPouca);
+  fuzzy->getFuzzyOutput(1)->addFuzzySet(irrigarMuita);
+
+  fuzzy->addFuzzyRule(new FuzzyRule(1, FuzzyRuleAntecedent().joinWithOR(new FuzzyRuleCondition().setInput(1, umidadeSeca), new FuzzyRuleCondition().setInput(1, umidadeModerada)), new FuzzyRuleConsequent().addOutput(1, irrigarPouca)));
+  fuzzy->addFuzzyRule(new FuzzyRule(2, FuzzyRuleAntecedent().joinWithOR(new FuzzyRuleCondition().setInput(1, umidadeUmida)), new FuzzyRuleConsequent().addOutput(1, irrigarNenhuma)));
+
   semaforoBomba = xSemaphoreCreateMutex();
 
-  xTaskCreatePinnedToCore(
-    connectWiFiTask,
-    "ConnectWiFiTask",
-    10000,
-    NULL,
-    1,
-    NULL,
-    0);
-
-  xTaskCreatePinnedToCore(
-    mqttTask,
-    "MqttTask",
-    10000,
-    NULL,
-    1,
-    NULL,
-    0);
-    
-  xTaskCreatePinnedToCore(
-    vaso1Task,
-    "Vaso1Task",
-    10000,
-    NULL,
-    1,
-    NULL,
-    1);
-
-  xTaskCreatePinnedToCore(
-    vaso2Task,
-    "Vaso2Task",
-    10000,
-    NULL,
-    1,
-    NULL,
-    1);
-
-  xTaskCreatePinnedToCore(
-    vaso3Task,
-    "Vaso3Task",
-    10000,
-    NULL,
-    1,
-    NULL,
-    1);
-
-  xTaskCreatePinnedToCore(
-    vaso4Task,
-    "Vaso4Task",
-    10000,
-    NULL,
-    1,
-    NULL,
-    1);
+  xTaskCreatePinnedToCore(connectWiFiTask, "ConnectWiFiTask", 10000, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(mqttTask, "MqttTask", 10000, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(vasoTask, "VasoTask1", 10000, (void *)&solo1, 1, NULL, 1);
+  xTaskCreatePinnedToCore(vasoTask, "VasoTask2", 10000, (void *)&solo2, 1, NULL, 1);
+  xTaskCreatePinnedToCore(vasoTask, "VasoTask3", 10000, (void *)&solo3, 1, NULL, 1);
+  xTaskCreatePinnedToCore(vasoTask, "VasoTask4", 10000, (void *)&solo4, 1, NULL, 1);
+  
 }
 
 void loop() {
