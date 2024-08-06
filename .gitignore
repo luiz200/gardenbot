@@ -1,5 +1,5 @@
 # Ignorar diretórios e arquivos específicos.
 env/
 plataforma-web/.env
-bot-telgram/.env
+bot-telegram/.env
 plataforma-web/__pycache__/

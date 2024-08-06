@@ -18,8 +18,8 @@ byte solo4 = 35;
 byte bomba = 4;
 
 // WiFi
-const char *ssid = "Simone";           // Enter your WiFi name
-const char *password = "simone234";  // Enter WiFi password
+const char *ssid = "Oi EAE6";           // Enter your WiFi name
+const char *password = "5rN7BswLfj";  // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
