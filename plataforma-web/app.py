@@ -23,6 +23,8 @@ topic_umidade_solo2 = "/umidade_solo2"
 topic_umidade_solo3 = "/umidade_solo3"
 topic_umidade_solo4 = "/umidade_solo4"
 topic_temperature = "/temperatura"
+topic_chuva = "/chuva"
+topic_intensidade_chuva = "/intensidade_chuva"
 
 mqtt_client = Mqtt(app)
 
@@ -32,7 +34,9 @@ latest_messages = {
     topic_umidade_solo1: None,
     topic_umidade_solo2: None,
     topic_umidade_solo3: None,
-    topic_umidade_solo4: None
+    topic_umidade_solo4: None,
+    topic_chuva: None,
+    topic_intensidade_chuva: None,
 }
 
 @mqtt_client.on_connect()
@@ -46,6 +50,8 @@ def handle_connect(client, userdata, flags, rc):
         mqtt_client.subscribe(topic_umidade_solo3)
         mqtt_client.subscribe(topic_umidade_solo4)
         mqtt_client.subscribe(topic_temperature)
+        mqtt_client.subscribe(topic_chuva)
+        mqtt_client.subscribe(topic_intensidade_chuva)
     else:
         print('Bad connection. Code:', rc)
 
@@ -61,16 +67,36 @@ def handle_mqtt_message(client, userdata, message):
 
     print(f'Mensagem recebida no tópico: {topic} com payload: {data}')
 
+def intensidade():
+    last_intensidade_chuva = latest_messages[topic_intensidade_chuva]
+    if last_intensidade_chuva < 1000:
+        return 'Chuva intensa'
+    elif last_intensidade_chuva <= 3000 or last_intensidade_chuva >= 1000:
+        return 'Chuva Moderada ou Chuvisco'
+    elif last_intensidade_chuva > 4000:
+        return 'Sem previsão de chuva'
+
+def chuva():
+    last_chuva = latest_messages[topic_chuva]
+    if last_chuva == 1:
+        return 'Sim'
+    elif last_chuva == 0:
+        return 'Não'
+
 
 @app.route('/')
 def index():
+    chuvas = chuva()
+    intensidades = intensidade()
     return render_template('index.html',
                            latest_temperature=latest_messages[topic_temperature],
                            latest_umidade_ar=latest_messages[topic_umidade_ar],
                            latest_umidade_solo1=latest_messages[topic_umidade_solo1],
                            latest_umidade_solo2=latest_messages[topic_umidade_solo2],
                            latest_umidade_solo3=latest_messages[topic_umidade_solo3],
-                           latest_umidade_solo4=latest_messages[topic_umidade_solo4]
+                           latest_umidade_solo4=latest_messages[topic_umidade_solo4],
+                           chuvas=chuvas,
+                           intensidades=intensidades,
                            )
 
 
@@ -83,7 +109,9 @@ def get_latest_message():
             'umidade_solo1': latest_messages[topic_umidade_solo1],
             'umidade_solo2': latest_messages[topic_umidade_solo2],
             'umidade_solo3': latest_messages[topic_umidade_solo3],
-            'umidade_solo4': latest_messages[topic_umidade_solo4]
+            'umidade_solo4': latest_messages[topic_umidade_solo4],
+            'chuva': latest_messages[topic_chuva],
+            'intensidade_chuva': latest_messages[topic_intensidade_chuva],
         }
     })
 
