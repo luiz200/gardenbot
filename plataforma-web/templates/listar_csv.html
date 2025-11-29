@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Arquivos CSV</title>
-    
+
     <style>
         /* Variáveis de Cores para o Tema Dark */
         :root {
@@ -46,25 +47,29 @@
         .back-link-container {
             max-width: 900px;
             margin: 0 auto 20px;
-            padding: 0 20px; /* Garante alinhamento com a tabela */
+            padding: 0 20px;
+            /* Garante alinhamento com a tabela */
         }
+
         .back-button {
             /* Estilo discreto de botão no tema dark */
             background: transparent;
-            color: var(--text-color); 
+            color: var(--text-color);
             padding: 8px 15px;
-            border: 1px solid var(--border-color); 
+            border: 1px solid var(--border-color);
             border-radius: 5px;
             font-weight: normal;
             font-size: 0.9em;
             box-shadow: none;
-            text-decoration: none; /* Garante que não tenha sublinhado */
+            text-decoration: none;
+            /* Garante que não tenha sublinhado */
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         .back-button:hover {
             background: var(--header-bg);
             color: var(--text-color);
-            transform: none; 
+            transform: none;
             box-shadow: none;
             cursor: pointer;
         }
@@ -82,12 +87,13 @@
             background-color: var(--bg-secondary);
         }
 
-        th, td {
-            padding: 16px; 
+        th,
+        td {
+            padding: 16px;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         tr:last-child td {
             border-bottom: none;
         }
@@ -104,18 +110,19 @@
         tr {
             transition: background-color 0.3s ease;
         }
+
         tr:hover {
             background-color: var(--row-hover);
         }
 
         /* Estilo do Botão/Link de Download (MAIS FORTE) */
-        a:not(.back-button) { 
+        a:not(.back-button) {
             display: inline-block;
             text-decoration: none;
-            background: var(--action-color); 
+            background: var(--action-color);
             padding: 10px 20px;
-            color: var(--bg-primary); 
-            border-radius: 5px; 
+            color: var(--bg-primary);
+            border-radius: 5px;
             font-weight: bold;
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -134,63 +141,144 @@
                 margin: 15px 0;
                 border-radius: 0;
             }
-            th, td {
+
+            th,
+            td {
                 padding: 12px 8px;
                 font-size: 0.9em;
             }
+
             h1 {
                 padding-top: 15px;
             }
+
             a {
                 padding: 8px 16px;
                 font-size: 0.9em;
             }
+
             .back-link-container {
                 padding: 0 10px;
             }
         }
+
+        #searchInput {
+            width: 250px;
+            padding: 10px 15px;
+            margin-left: 20px;
+            /* Espaçamento do botão Voltar */
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--bg-secondary);
+            color: var(--text-color);
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        #searchInput::placeholder {
+            color: #888;
+        }
+
+        #searchInput:focus {
+            border-color: var(--action-color);
+            /* Foca no verde */
+        }
+
+        /* Ajuste para mobile */
+        @media (max-width: 768px) {
+            #searchInput {
+                width: 100%;
+                margin-top: 10px;
+                margin-left: 0;
+            }
+
+            .back-link-container {
+                display: flex;
+                flex-direction: column;
+                /* Coloca o botão e o input em linhas separadas */
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
+
 <body>
 
-<main>
-    <h1>Arquivos CSV Disponíveis</h1>
+    <main>
+        <h1>Arquivos CSV Disponíveis</h1>
 
-    <div class="back-link-container">
-        <a href="{{ url_for('index') }}" class="back-button" title="Voltar para a página inicial">
-            ← Voltar ao Início
-        </a>
-    </div>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>Data da Criação</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for arq in arquivos %}
-            <tr>
-                <td>{{ arq.data }}</td>
-                <td>
-                    <a href="/download_csv_by_date?data={{ arq.data }}" 
-                       download="csv-{{ arq.data | default('arquivo') }}" 
-                       title="Baixar o arquivo CSV referente à data {{ arq.data }}">
-                        Baixar
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="2" style="text-align: center; padding: 30px; color: #aaa;">
-                    Nenhum arquivo CSV encontrado.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</main>
+        <div class="back-link-container">
+            <a href="{{ url_for('index') }}" class="back-button" title="Voltar para a página inicial">
+                ← Voltar ao Início
+            </a>
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar por Data..."
+                title="Digite a data">
+        </div>
 
+        <table>
+            <thead>
+                <tr>
+                    <th>Data da Criação</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for arq in arquivos %}
+                <tr>
+                    <td>{{ arq.data }}</td>
+                    <td>
+                        <a href="/download_csv_by_date?data={{ arq.data }}"
+                            download="csv-{{ arq.data | default('arquivo') }}"
+                            title="Baixar o arquivo CSV referente à data {{ arq.data }}">
+                            Baixar
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" style="text-align: center; padding: 30px; color: #aaa;">
+                        Nenhum arquivo CSV encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+    <script>
+        function filterTable() {
+            // Declaração de variáveis
+            let input, filter, table, tr, td, i, txtValue;
+
+            // 1. Pega o valor digitado no campo de busca e o transforma em maiúsculas
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+
+            // 2. Pega a tabela e todas as suas linhas (tr)
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            // 3. Itera sobre todas as linhas da tabela (começa em 1 para pular o cabeçalho 'th')
+            for (i = 1; i < tr.length; i++) {
+                // Pega a célula que contém a data (a primeira coluna, índice 0)
+                td = tr[i].getElementsByTagName("td")[0];
+
+                // Verifica se a célula de data existe (para evitar erro na linha "Nenhum arquivo encontrado")
+                if (td) {
+                    // Pega o conteúdo da data, remove espaços extras e transforma em maiúsculas
+                    txtValue = td.textContent || td.innerText;
+
+                    // Se o texto da célula incluir o filtro, exibe a linha
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        // Caso contrário, oculta a linha
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
 </body>
+
 </html>

@@ -21,11 +21,13 @@ last_umidadesolo1 = None
 last_umidadesolo2 = None
 last_umidadesolo3 = None
 last_umidadesolo4 = None
+last_chuva = 0
+last_intensidade_chuva = 0
 
 USERNAME, PASSWORD = range(2)
 
 def on_message(client, userdata, msg):
-    global last_temperatura, last_umidade, last_umidadesolo1, last_umidadesolo2, last_umidadesolo3, last_umidadesolo4
+    global last_temperatura, last_umidade, last_umidadesolo1, last_umidadesolo2, last_umidadesolo3, last_umidadesolo4, last_chuva, last_intensidade_chuva
     message = msg.payload.decode()
 
     #logging.info(f"Mensagem recebida no tópico {msg.topic}: {message}")
@@ -42,6 +44,10 @@ def on_message(client, userdata, msg):
         last_umidadesolo3 = message
     elif msg.topic == '/umidade_solo4':
         last_umidadesolo4 = message
+    elif msg.topic == '/chuva':
+        last_chuva == int(message)
+    elif msg.topic == '/intensidade_chuva':
+        last_intensidade_chuva == int(message)
     
 
 def connect_mqtt(username, password):
@@ -57,11 +63,27 @@ def connect_mqtt(username, password):
         client.subscribe('/umidade_solo2')
         client.subscribe('/umidade_solo3')
         client.subscribe('/umidade_solo4')
+        client.subscribe('/chuva')
+        client.subscribe('/intensidade_chuva')
         client.loop_start()
         return client
     except Exception as e:
         logging.error(f"Erro ao conectar ao MQTT: {e}")
         return None
+    
+def intensidade():
+    if last_intensidade_chuva < 1000:
+        return 'Chuva intensa'
+    elif last_intensidade_chuva <= 3000 or last_intensidade_chuva >= 1000:
+        return 'Chuva Moderada ou Chuvisco'
+    elif last_intensidade_chuva > 4000:
+        return 'Sem previsão de chuva'
+
+def chuva():
+    if last_chuva == 1:
+        return 'Sim'
+    elif last_chuva == 0:
+        return 'Não'
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text('Olá! Por favor, forneça seu nome de usuário MQTT:')
@@ -97,6 +119,19 @@ async def get_umidade(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     else:
         await update.message.reply_text('Os dados de umidade não foram recebidos.')
 
+async def get_chuva(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if last_chuva is not None:
+        await update.message.reply_text(f'Está chovendo? {last_chuva}')
+    else:
+        await update.message.reply_text('Os dados de umidade não foram recebidos.')
+
+async def get_intensidade(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if last_intensidade_chuva is not None:
+        inte = intensidade()
+        await update.message.reply_text(f'Intensidade: {inte}')
+    else:
+        await update.message.reply_text('Os dados de umidade não foram recebidos.')
+
 async def get_umidadesolo1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if last_umidadesolo1 is not None:
         await update.message.reply_text(f'A umidade do vaso-1 atual é {last_umidadesolo1}%')
@@ -123,10 +158,13 @@ async def get_umidadesolo4(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def get_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if last_temperatura is not None and last_umidade is not None and last_umidadesolo1 is not None and last_umidadesolo2 is not None and last_umidadesolo3 is not None and last_umidadesolo4 is not None:
+        intensidade_chuvas = intensidade()
+        chuvas = chuva()
         status_message = (
             f'Dados do ambiente:\n'
             f'\n'
             f'Temperatura:  {last_temperatura}° | Umidade:  {last_umidade}%\n'
+            f'Chuva:  {chuvas}° | Instensidade:  {intensidade_chuvas}%\n'
             f'\n'
             f'Dados da plantação:\n'
             f'\n'
@@ -152,6 +190,8 @@ async def main():
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("temperatura", get_temperatura))
     application.add_handler(CommandHandler("umidade", get_umidade))
+    application.add_handler(CommandHandler("chuva", get_chuva))
+    application.add_handler(CommandHandler("intensidade", get_intensidade))
     application.add_handler(CommandHandler("umidadesolo1", get_umidadesolo1))
     application.add_handler(CommandHandler("umidadesolo2", get_umidadesolo2))
     application.add_handler(CommandHandler("umidadesolo3", get_umidadesolo3))
