@@ -1,5 +1,7 @@
+from datetime import datetime
 import os
-from flask import Flask, request, jsonify, render_template
+import csv
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_mqtt import Mqtt
 import ujson
 from flask_bootstrap import Bootstrap
@@ -35,8 +37,8 @@ latest_messages = {
     topic_umidade_solo2: None,
     topic_umidade_solo3: None,
     topic_umidade_solo4: None,
-    topic_chuva: None,
-    topic_intensidade_chuva: None,
+    topic_chuva: 0,
+    topic_intensidade_chuva: 0,
 }
 
 @mqtt_client.on_connect()
@@ -55,6 +57,26 @@ def handle_connect(client, userdata, flags, rc):
     else:
         print('Bad connection. Code:', rc)
 
+def get_csv_file():
+    os.makedirs("csv", exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    filename = f"csv/dados_{today}.csv"
+
+    if not os.path.exists(filename):
+        with open(filename, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "timestamp",
+                "temperatura",
+                "umidade_ar",
+                "umidade_solo1",
+                "umidade_solo2",
+                "umidade_solo3",
+                "umidade_solo4",
+                "chuva",
+                "intensidade_chuva"
+            ])
+    return filename
 
 @mqtt_client.on_message()
 def handle_mqtt_message(client, userdata, message):
@@ -65,29 +87,27 @@ def handle_mqtt_message(client, userdata, message):
 
     latest_messages[topic] = data
 
-    print(f'Mensagem recebida no tópico: {topic} com payload: {data}')
+    filename = get_csv_file()
 
-def intensidade():
-    last_intensidade_chuva = latest_messages[topic_intensidade_chuva]
-    if last_intensidade_chuva < 1000:
-        return 'Chuva intensa'
-    elif last_intensidade_chuva <= 3000 or last_intensidade_chuva >= 1000:
-        return 'Chuva Moderada ou Chuvisco'
-    elif last_intensidade_chuva > 4000:
-        return 'Sem previsão de chuva'
+    row = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        latest_messages[topic_temperature],
+        latest_messages[topic_umidade_ar],
+        latest_messages[topic_umidade_solo1],
+        latest_messages[topic_umidade_solo2],
+        latest_messages[topic_umidade_solo3],
+        latest_messages[topic_umidade_solo4],
+        latest_messages[topic_chuva],
+        latest_messages[topic_intensidade_chuva],
+    ]
 
-def chuva():
-    last_chuva = latest_messages[topic_chuva]
-    if last_chuva == 1:
-        return 'Sim'
-    elif last_chuva == 0:
-        return 'Não'
+    with open(filename, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(row)
 
 
 @app.route('/')
 def index():
-    chuvas = chuva()
-    intensidades = intensidade()
     return render_template('index.html',
                            latest_temperature=latest_messages[topic_temperature],
                            latest_umidade_ar=latest_messages[topic_umidade_ar],
@@ -95,8 +115,8 @@ def index():
                            latest_umidade_solo2=latest_messages[topic_umidade_solo2],
                            latest_umidade_solo3=latest_messages[topic_umidade_solo3],
                            latest_umidade_solo4=latest_messages[topic_umidade_solo4],
-                           chuvas=chuvas,
-                           intensidades=intensidades,
+                           latest_chuva=latest_messages[topic_chuva],
+                           lastest_intensidade=latest_messages[topic_intensidade_chuva],
                            )
 
 
@@ -114,6 +134,44 @@ def get_latest_message():
             'intensidade_chuva': latest_messages[topic_intensidade_chuva],
         }
     })
+
+@app.route('/listar_csv')
+def listar_csv():
+    folder = "csv"
+    os.makedirs(folder, exist_ok=True)
+
+    arquivos = []
+
+    for nome in os.listdir(folder):
+        if nome.endswith(".csv"):
+            data = nome.replace("dados_", "").replace(".csv", "")
+            arquivos.append({
+                "nome": nome,
+                "data": data
+            })
+
+    arquivos.sort(key=lambda x: x["data"], reverse=True)
+
+    return render_template("listar_csv.html", arquivos=arquivos)
+
+@app.route('/download_csv_by_date')
+def download_csv_by_date():
+    date_str = request.args.get("data")
+
+    if not date_str:
+        return "Data não fornecida", 400
+
+    filename = f"csv/dados_{date_str}.csv"
+
+    if not os.path.exists(filename):
+        return f"Arquivo {filename} não encontrado.", 404
+
+    return send_file(
+        filename,
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name=os.path.basename(filename)
+    )
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

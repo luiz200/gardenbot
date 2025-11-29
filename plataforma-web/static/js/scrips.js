@@ -18,6 +18,9 @@ $(document).ready(function () {
                     $("#umidade_solo2").text(data.message.umidade_solo2 || "No data");
                     $("#umidade_solo3").text(data.message.umidade_solo3 || "No data");
                     $("#umidade_solo4").text(data.message.umidade_solo4 || "No data");
+                    $("#chuva_status").text(chuvaFront(data.message.chuva));
+                    $("#intensidade_status").text(intensidadeFront(data.message.intensidade_chuva));
+
 
                     var temperatureComparison = compareValues(previousValues[1]?.temperature, data.message.temperature);
                     var umidade_arComparison = compareValues(previousValues[1]?.umidade_ar, data.message.umidade_ar);
@@ -38,6 +41,33 @@ $(document).ready(function () {
             }
         });
     }, 5000); // Intervalo de 5 segundos
+
+    function intensidadeFront(valor) {
+        if (valor === null || valor === undefined) return "Sem dados";
+
+        valor = Number(valor);
+
+        if (valor < 1000) {
+            return "Chuva intensa";
+        } else if (valor >= 1000 && valor <= 3000) {
+            return "Chuva Moderada ou Chuvisco";
+        } else if (valor > 3000) {
+            return "Sem previsão de chuva";
+        }
+    }
+
+    function chuvaFront(valor) {
+        if (valor === null || valor === undefined) return "Sem dados";
+
+        valor = Number(valor);
+
+        if (valor === 0) {
+            return "Sim";
+        } else if (valor === 1) {
+            return "Não";
+        }
+    }
+
 
     // Função para comparar dois valores e retornar o tipo de comparação
     function compareValues(previous, current) {
